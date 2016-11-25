@@ -192,7 +192,7 @@ public class ChatService {
 				chatRoomData.addMember(addUserData);
 				userData.addEnterChatRoom(chatRoomData);
 				System.out.println("[채팅방 사용자 추가] 성공" 
-						+ "(ChatRoomID: " + chatRoomData.getChatRoomId() + "UserID: " + addUserIdString + ")");
+						+ "(ChatRoomID: " + chatRoomData.getChatRoomId() + ", UserID: " + addUserIdString + ")");
 				addUserCount++;
 			} catch (NumberFormatException e) {
 				System.err.println("[채팅방 사용자 추가] 실패 - ID가 숫자가 아님 (" + addUserIdString + ")");
@@ -228,8 +228,12 @@ public class ChatService {
 					
 					userMap.put(userProfile.getId(), userInfo);
 					
+					MessageVO sendMsg = new MessageVO();
+					sendMsg.setType(MessageVO.MSG_TYPE_CHANGE_PROFILE);
+					sendMsg.setObject(userProfile);
+					
 					/* 설정된 사용자 정보를 클라이언트에 전송 */
-					userInfo.getOos().writeObject(userProfile);
+					userInfo.getOos().writeObject(sendMsg);
 					
 					System.out.println("[사용자 등록] 성공 - " + userProfile);
 				} catch (ClassNotFoundException | IOException e2) {

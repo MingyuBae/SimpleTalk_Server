@@ -57,6 +57,7 @@ public class MessageVO implements Serializable{
 	
 	@Override
 	public String toString() {
-		return "MessageVO [type=" + type + ", roomIdx=" + roomIdx + ", data=" + data + ", object=" + object + "]";
+		return "MessageVO [senderId=" + senderId + ", type=" + type + ", roomIdx=" + roomIdx + ", data=" + data
+				+ ", object=" + object + "]";
 	}
 }

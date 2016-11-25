@@ -6,7 +6,7 @@ public class Main {
 		
 		Server server = new Server();
 		
-		server.startServer(30000);
+		server.startServer(80);
 		
 	}
 }
