@@ -1,4 +1,4 @@
-package kr.ac.hansung.simpleTalk.server;
+package kr.ac.hansung.simpletalk.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -14,6 +14,8 @@ public class Server {
 			chatService = new ChatService();
 			
 			Connection();
+			
+			System.out.println("[서버 준비 완료] - port: " + portNumber);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.err.println("서버 소켓 생성중 문제 발생");

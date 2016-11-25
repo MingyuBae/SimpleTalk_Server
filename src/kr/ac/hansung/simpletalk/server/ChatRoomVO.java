@@ -1,11 +1,19 @@
-package kr.ac.hansung.simpleTalk.server;
+package kr.ac.hansung.simpletalk.server;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class ChatRoomVO {
-	private String roomName;
-	private List<UserVO> memberList;
+	private Integer chatRoomId;
+	private String roomName = "";
+	private List<UserVO> memberList = new LinkedList<>();
 	
+	public Integer getChatRoomId() {
+		return chatRoomId;
+	}
+	public void setChatRoomId(Integer chatRoomId) {
+		this.chatRoomId = chatRoomId;
+	}
 	public String getRoomName() {
 		return roomName;
 	}

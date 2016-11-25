@@ -1,4 +1,4 @@
-package kr.ac.hansung.simpleTalk.transformVO;
+package kr.ac.hansung.simpletalk.transformVO;
 
 import java.io.Serializable;
 
@@ -48,5 +48,12 @@ public class UserProfileVO implements Serializable{
 	}
 	public void setImgFileName(String imgFileName) {
 		this.imgFileName = imgFileName;
+	}
+
+
+	@Override
+	public String toString() {
+		return "UserProfileVO [id=" + id + ", name=" + name + ", stateMsg=" + stateMsg + ", imgFileName=" + imgFileName
+				+ "]";
 	}
 }

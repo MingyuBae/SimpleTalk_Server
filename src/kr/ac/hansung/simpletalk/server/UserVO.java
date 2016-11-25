@@ -1,4 +1,4 @@
-package kr.ac.hansung.simpleTalk.server;
+package kr.ac.hansung.simpletalk.server;
 
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 
-import kr.ac.hansung.simpleTalk.transformVO.UserProfileVO;
+import kr.ac.hansung.simpletalk.transformVO.UserProfileVO;
 
 public class UserVO implements Serializable{
 	private static final long serialVersionUID = -5733194577087509091L;
@@ -71,5 +71,11 @@ public class UserVO implements Serializable{
 	}
 	public void setOos(ObjectOutputStream oos) {
 		this.oos = oos;
+	}
+	
+	@Override
+	public String toString() {
+		return "UserVO [userProfile=" + userProfile + ", enterChatRoomList=" + enterChatRoomList + ", socket=" + socket
+				+ ", is=" + is + ", os=" + os + ", ois=" + ois + ", oos=" + oos + "]";
 	}
 }
