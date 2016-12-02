@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import kr.ac.hansung.simpletalk.transformVO.MessageVO;
+
 public class Server {
 	private ServerSocket serverSocket;
 	private ChatService chatService;
@@ -12,6 +14,13 @@ public class Server {
 		try {
 			serverSocket = new ServerSocket(portNumber);
 			chatService = new ChatService();
+			
+			// 접속한 모든 사용자가 있는 단체 채팅방 생성
+			MessageVO makeChatRoomData = new MessageVO();
+			makeChatRoomData.setType(MessageVO.MSG_TYPE_MAKEROOM);
+			makeChatRoomData.setData("ALL");
+			makeChatRoomData.setObject("");
+			chatService.makeRoom(makeChatRoomData);
 			
 			Connection();
 			
