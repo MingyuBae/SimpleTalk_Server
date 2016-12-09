@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -99,13 +100,10 @@ public class ChatService {
 	 * @param msgData 생성할 채팅방 정보가 들어있는 메시지
 	 * @return 생성된 채팅방에 대한 메시지
 	 */
-	public MessageVO makeRoom(MessageVO msgData){
-		MessageVO returnMsg = new MessageVO();
-		returnMsg.setType(MessageVO.MSG_TYPE_MAKEROOM);
+	public boolean makeRoom(MessageVO msgData){
 		
 		if(! MessageVO.MSG_TYPE_MAKEROOM.equals(msgData.getType())){
-			returnMsg.setData(MessageVO.MSG_ERROR);
-			return returnMsg;
+			return false;
 		}
 		
 		String roomName = msgData.getData();
@@ -136,26 +134,52 @@ public class ChatService {
 			
 			chatRoomData.addMember(userInfo);
 			userInfo.addEnterChatRoom(chatRoomData);
+			
 			enterUserCount ++;
 		}
 		
 		if(enterUserCount < 1 && chatRoomIdIncrement != 0){
 			System.out.println("[채팅방 생성] 실패 - 채팅 참가자가 1명 이하입니다. (chatInfo: " + chatRoomData + ")");
-			returnMsg.setData(MessageVO.MSG_ERROR);
-			return returnMsg;
+			return false;
 		}
+		
 		Integer chatId = chatRoomIdIncrement++;
 		chatRoomData.setChatRoomId(chatId);
 		chatRoomMap.put(chatId, chatRoomData);
 		
 		System.out.println("[채팅방 생성] 완료 (chatRoomID: " + chatRoomData.getChatRoomId() +", chatInfo: " + chatRoomData + ")");
 		
-		returnMsg.setData(MessageVO.MSG_SUCCESS);
-		returnMsg.setRoomId(chatId);
+		makeRoomNotification(chatRoomData);
 		
-		return returnMsg;
+		return true;
 	}
 	
+	private void makeRoomNotification(ChatRoomVO chatRoomData) {
+		LinkedList<UserProfileVO> chatUserProfileList = new LinkedList<>();
+		MessageVO sendMsg = new MessageVO();
+		
+		
+		
+		for(UserVO userData: chatRoomData.getMemberList()){
+			chatUserProfileList.add(userData.getUserProfile());
+		}
+		
+		sendMsg.setType(MessageVO.MSG_TYPE_MAKEROOM);
+		sendMsg.setRoomId(chatRoomData.getChatRoomId());
+		sendMsg.setData(chatRoomData.getRoomName());
+		sendMsg.setObject(chatUserProfileList);
+		
+		for(UserVO userData: chatRoomData.getMemberList()){
+			try{
+				userData.getOos().writeObject(sendMsg);
+			}catch (IOException e) {
+				System.err.println("[채팅방 생성 알림] 예외 발생");
+				e.printStackTrace();
+			}
+		}
+		
+	}
+
 	/**
 	 * 채팅방에 사용자 추가
 	 * @param userData 추가시키는 사용자 데이터
@@ -200,8 +224,6 @@ public class ChatService {
 			}
 		}
 		
-		
-		/* TODO 채팅방에 접속된 사용자에게 유저 명단이 변경됬다고 알려줄 메시지 생성 및 발송 */
 		if(addUserCount > 0){
 			chatRoomUserAddNotification(chatRoomData, addUserListString);
 		}
@@ -209,6 +231,29 @@ public class ChatService {
 		return addUserCount;
 	}
 	
+	/**
+	 * 사용자의 프로필 변경 처리
+	 * @param userData
+	 * @param msgData 변경한 프로필 정보가 있는 메시지
+	 * @return
+	 */
+	public boolean changeProfileUser(UserVO userData, MessageVO msgData){
+		if(! MessageVO.MSG_TYPE_CHANGE_PROFILE.equals(msgData.getType())){
+			return false;
+		}
+		
+		UserProfileVO changeUserProfile = (UserProfileVO)msgData.getObject();
+		UserProfileVO oldUserProfile = userData.getUserProfile();
+		
+		oldUserProfile.setName(changeUserProfile.getName());
+		oldUserProfile.setStateMsg(changeUserProfile.getStateMsg());
+		oldUserProfile.setImgFileName(changeUserProfile.getImgFileName());
+		
+		broadcastMsgSend(msgData);
+		
+		return true;
+	}
+
 	/**
 	 * 클라이언트가 보내는 메시지를 수신하는 스레드 생성
 	 * @param userInfo
@@ -253,10 +298,13 @@ public class ChatService {
 							sendMessage(userInfo, msg);
 							break;
 						case MessageVO.MSG_TYPE_MAKEROOM:
-							userInfo.getOos().writeObject(makeRoom(msg));
+							makeRoom(msg);
 							break;
 						case MessageVO.MSG_TYPE_ADD_CHATROOM_USER:
 							addChatRoomUser(userInfo, msg);
+							break;
+						case MessageVO.MSG_TYPE_CHANGE_PROFILE:
+							changeProfileUser(userInfo, msg);
 							break;
 						default:
 							System.err.println("[메시지 수신] 알려지지 않은 타입: " + msg.getType());
@@ -287,6 +335,28 @@ public class ChatService {
 			}
 		});
 		th.start();
+	}
+	
+	
+	/**
+	 * 서버에 접속해 있는 모든 사용자에게 메시지를 전송하는 함수
+	 * @param msgData
+	 */
+	private void broadcastMsgSend(MessageVO msgData) {
+		Collection<UserVO> userList = userMap.values();
+		int count = 0;
+		
+		for(UserVO userData: userList){
+			try {
+				userData.getOos().writeObject(msgData);
+				count++;
+			} catch (IOException e) {
+				System.err.println("[메시지 전체 전송] 실패 - (userData: " + userData + ", msgData: " + msgData + ")");
+				e.printStackTrace();
+			}
+		}
+		
+		System.out.println("[메시지 전체 전송] 성공 (전송된 메시지: " + count + ")");
 	}
 	
 	/**
