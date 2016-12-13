@@ -58,7 +58,7 @@ public class ChatService {
 	 */
 	public MessageVO sendMessage(UserVO sendUserInfo, MessageVO msgData){
 		MessageVO returnMsg = new MessageVO();
-		returnMsg.setType(MessageVO.MSG_TYPE_TEXT);
+		returnMsg.setType(msgData.getType());
 		
 		ChatRoomVO roomInfo = chatRoomMap.get(msgData.getRoomId());
 		List<UserVO> chatRoomMemberList;
@@ -295,6 +295,7 @@ public class ChatService {
 						
 						switch (msg.getType()) {
 						case MessageVO.MSG_TYPE_TEXT:
+						case MessageVO.MSG_TYPE_IMAGE:
 							sendMessage(userInfo, msg);
 							break;
 						case MessageVO.MSG_TYPE_MAKEROOM:
@@ -405,7 +406,7 @@ public class ChatService {
 		MessageVO sendMsg = new MessageVO();
 		sendMsg.setType(MessageVO.MSG_TYPE_EXIT_CHATROOM_USER);
 		sendMsg.setRoomId(roomInfo.getChatRoomId());
-		sendMsg.setData(userInfo.getUserProfile().getId().toString());
+		sendMsg.setData(userInfo.getUserProfile().getName());
 		sendMsg.setObject(enterUserProfileList);
 		
 		for(UserVO eachUserData: roomInfo.getMemberList()){
