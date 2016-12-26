@@ -56,22 +56,17 @@ public class ChatService {
 	 * @param msgData 보낼 메시지 데이터
 	 * @return 메시지 처리 결과
 	 */
-	public MessageVO sendMessage(UserVO sendUserInfo, MessageVO msgData){
-		MessageVO returnMsg = new MessageVO();
-		returnMsg.setType(msgData.getType());
-		
+	public void sendMessage(UserVO sendUserInfo, MessageVO msgData){
 		ChatRoomVO roomInfo = chatRoomMap.get(msgData.getRoomId());
 		List<UserVO> chatRoomMemberList;
 		
 		if(roomInfo == null || !roomInfo.getMemberList().contains(sendUserInfo)){
 			// 채팅방에 해당 유저가 없는 경우
-			returnMsg.setData(MessageVO.MSG_ERROR);
-			return returnMsg;
+			return;
 		}
 		
 		chatRoomMemberList = roomInfo.getMemberList();
 		
-		int sendCount = 0;
 		for(UserVO chatUser : chatRoomMemberList){
 			/* 채팅에 참여하고 있는 사용자에게 메시지 전송 */
 			ObjectOutputStream oos = chatUser.getOos();
@@ -80,7 +75,6 @@ public class ChatService {
 				oos.writeObject(msgData);
 				System.out.println("[메시지 전송] 성공 - 수신자: " 
 						+ chatUser + ", MessageData: " + msgData);
-				sendCount++;
 			} catch (IOException e) {
 				System.out.println("[메시지 전송] 오류 발생 - UserInfo: " 
 										+ chatUser + ", MessageData: " + msgData);
@@ -90,9 +84,7 @@ public class ChatService {
 		System.out.println("[메시지 전송] 성공 - 전송자: " 
 				+ sendUserInfo + ", MessageData: " + msgData);
 		
-		returnMsg.setData(MessageVO.MSG_SUCCESS);
-		returnMsg.setObject(sendCount);
-		return returnMsg;
+		return;
 	}
 	
 	/**
@@ -159,7 +151,6 @@ public class ChatService {
 		MessageVO sendMsg = new MessageVO();
 		
 		
-		
 		for(UserVO userData: chatRoomData.getMemberList()){
 			chatUserProfileList.add(userData.getUserProfile());
 		}
@@ -193,7 +184,7 @@ public class ChatService {
 		
 		ChatRoomVO chatRoomData = chatRoomMap.get(msgData.getRoomId());
 		
-		if(chatRoomData == null ){// || !chatRoomData.getMemberList().contains(userData)){	// 초대자가 해당 채팅방에 있어야 가능한
+		if(chatRoomData == null ){
 			return 0;
 		}
 		
@@ -217,6 +208,15 @@ public class ChatService {
 				addUserListString += userData.getUserProfile().getId() + MessageVO.MSG_SPLIT_CHAR;
 				System.out.println("[채팅방 사용자 추가] 성공" 
 						+ "(ChatRoomID: " + chatRoomData.getChatRoomId() + ", UserID: " + addUserIdString + ")");
+				
+				MessageVO enterMsg = new MessageVO();
+				enterMsg.setType(MessageVO.MSG_TYPE_MAKEROOM);
+				enterMsg.setRoomId(chatRoomData.getChatRoomId());
+				enterMsg.setData(chatRoomData.getRoomName());
+				enterMsg.setObject(null);
+				sendMessage(addUserData, enterMsg);
+				
+				
 				addUserCount++;
 			} catch (NumberFormatException e) {
 				System.err.println("[채팅방 사용자 추가] 실패 - ID가 숫자가 아님 (" + addUserIdString + ")");
@@ -288,7 +288,6 @@ public class ChatService {
 				
 				while (true) {
 					try{
-						// TODO 사용자가 보내는 메시지 처리 (채팅방 개설, 메시지 변경, 프로필 변경 등)
 						MessageVO msg = (MessageVO)userInfo.getOis().readObject();
 						
 						System.out.println(msg);
@@ -296,6 +295,7 @@ public class ChatService {
 						switch (msg.getType()) {
 						case MessageVO.MSG_TYPE_TEXT:
 						case MessageVO.MSG_TYPE_IMAGE:
+						case MessageVO.MSG_TYPE_EMOTICON:
 							sendMessage(userInfo, msg);
 							break;
 						case MessageVO.MSG_TYPE_MAKEROOM:
@@ -307,13 +307,15 @@ public class ChatService {
 						case MessageVO.MSG_TYPE_CHANGE_PROFILE:
 							changeProfileUser(userInfo, msg);
 							break;
+						case MessageVO.MSG_TYPE_EXIT_CHATROOM_USER:
+							exitChatRoom(userInfo, msg);
+							break;
 						default:
 							System.err.println("[메시지 수신] 알려지지 않은 타입: " + msg.getType());
 							break;
 						}
 						
 					} catch (IOException e) {
-						// TODO 클라이언트 접속 종료시 처리해야 될 부분 (소캣 끊기, 채팅방에서 나가기 처리, 사용자 리스트에 제외)
 						System.out.println("[사용자 접속] 끊어짐 - userInfo " + userInfo);
 						allExitChatRoom(userInfo);
 						
@@ -385,10 +387,14 @@ public class ChatService {
 	 * @param userInfo 퇴장시킬 사용자 정보
 	 * @param roomInfo 채팅방 정보
 	 */
-	private void exitChatRoom(ChatRoomVO roomInfo, UserVO userInfo){
-		roomInfo.removeMember(userInfo);
-		userInfo.removeEnterChatRoom(roomInfo);
-		System.out.println("[채팅방 퇴장] 상태 RoomID: " + roomInfo.getChatRoomId() +", UserID: " + userInfo.getUserProfile().getId());
+	private void exitChatRoom(UserVO userInfo, MessageVO messageVO){
+		ChatRoomVO roomInfo = chatRoomMap.get(messageVO.getRoomId());
+		
+		if(roomInfo != null){
+			roomInfo.removeMember(userInfo);
+			userInfo.removeEnterChatRoom(roomInfo);
+			System.out.println("[채팅방 퇴장] 상태 RoomID: " + roomInfo.getChatRoomId() +", UserID: " + userInfo.getUserProfile().getId());
+		}
 	}
 	
 	/**
